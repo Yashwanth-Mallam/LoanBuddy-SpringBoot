@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.loanbuddy.loanbuddy.Exceptions.ResourceNotFoundException;
+import com.loanbuddy.loanbuddy.model.User;
 import com.loanbuddy.loanbuddy.model.UserProfile;
 import com.loanbuddy.loanbuddy.services.UserProfileService;
+import com.loanbuddy.loanbuddy.services.UserService;
 
 @RestController
 @RequestMapping("/api/")
@@ -24,15 +26,16 @@ public class UserProfileController {
     @Autowired
     private UserProfileService userProfileService;
     private static final Logger logger = LoggerFactory.getLogger(UserProfileController.class);
-    
+    @Autowired
+    private UserService userService;
     //to get a profile by user id
-    @GetMapping("/userprofile/{userId}")
-    public UserProfile getUserProfileById(@PathVariable String userId) {
-        logger.info("Received request for GET user profile endpoint for userId: {}", userId);
+    @GetMapping("/userprofile/{email}")
+    public UserProfile getUserProfileByEmail(@PathVariable String email) {
+        logger.info("Received request for GET user profile endpoint for email: {}", email);
         try {
-            return userProfileService.getUserProfileByUserId(userId);
+            return userProfileService.getUserProfileByEmail(email);
         } catch (Exception e) {
-            logger.error("Failed to GET user profile for userId: {}", userId, e);
+            logger.error("Failed to GET user profile for email: {}", email, e);
             throw new ResourceNotFoundException("Failed to get user profile: " + e.getMessage());
         }
     }
@@ -50,7 +53,7 @@ public class UserProfileController {
             throw new ResourceNotFoundException("Failed to create user profile: " + e.getMessage());
         }
     }
-    //to get all profiles
+    // to get all profiles
     @GetMapping("/userprofiles")
     public List<UserProfile> getAllUserProfiles() {
         logger.info("Received request for GET all user profiles endpoint");
@@ -63,24 +66,44 @@ public class UserProfileController {
             throw new ResourceNotFoundException("Failed to get all user profiles: " + e.getMessage());
         }
     }
+    // ✅ Fetch all lenders
+   @GetMapping("/userprofile/lenders")
+    public List<UserProfile> getAllLenders() {
+        logger.info("Received request for GET all lenders endpoint");
+        try {
+            List<User> lenders = userService.getAllLenders();
+            
+            // Fetch profiles for each lender using their email
+            List<UserProfile> lenderProfiles = lenders.stream()
+                .map(lender -> userProfileService.getUserProfileByEmail(lender.getEmail()))
+                .collect(java.util.stream.Collectors.toList());
+
+            logger.info("Successfully retrieved all lender profiles");
+            return lenderProfiles;
+        } catch (Exception e) {
+            logger.error("Failed to GET all lenders", e);
+            throw new ResourceNotFoundException("Failed to get all lenders: " + e.getMessage());
+        }
+    }
+
 
     //to delete a profile
-    @DeleteMapping("/userprofile/{userId}")
-    public ResponseEntity<?> deleteUserProfile(@PathVariable String userId) {
-        logger.info("Received request for DELETE user profile endpoint for userId: {}", userId);
+    @DeleteMapping("/userprofile/{email}")
+    public ResponseEntity<?> deleteUserProfile(@PathVariable String email) {
+        logger.info("Received request for DELETE user profile endpoint for email: {}", email);
         try {
             // Check if profile exists
-            UserProfile existingProfile = userProfileService.getUserProfileByUserId(userId);
+            UserProfile existingProfile = userProfileService.getUserProfileByEmail(email);
             if (existingProfile == null) {
-                logger.warn("User profile not found for userId: {}", userId);
+                logger.warn("User profile not found for email: {}", email);
                 return ResponseEntity.notFound().build();
             }
 
-            userProfileService.deleteUserProfile(userId);
-            logger.info("Successfully deleted user profile for userId: {}", userId);
+            userProfileService.deleteUserProfile(email);
+            logger.info("Successfully deleted user profile for email: {}", email);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            logger.error("Failed to DELETE user profile for userId: {}", userId, e);
+            logger.error("Failed to DELETE user profile for email: {}", email, e);
             throw new ResourceNotFoundException("Failed to delete user profile: " + e.getMessage());
         }
     }

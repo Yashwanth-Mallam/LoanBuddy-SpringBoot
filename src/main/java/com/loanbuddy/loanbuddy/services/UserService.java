@@ -2,6 +2,7 @@ package com.loanbuddy.loanbuddy.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -93,4 +94,19 @@ public class UserService {
     // public User updateUser(String id, User user) {
     //     throw new UnsupportedOperationException("Not supported yet.");
     // }
+    public List<User> getAllLenders() {
+        try {
+            List<User> lenders = userRepository.findAllByType("lender");
+            if (lenders.isEmpty()) {
+                throw new ResourceNotFoundException("No lenders found in the system");
+            }
+            return lenders;
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("Error retrieving lenders: " + e.getMessage());
+        }
+    }
+
+    public Stream<Object> getUserProfileByEmail(String email) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }

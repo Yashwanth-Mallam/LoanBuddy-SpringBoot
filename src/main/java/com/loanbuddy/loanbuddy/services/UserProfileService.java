@@ -23,8 +23,10 @@ public class UserProfileService {
     private String userId;
 
     // Fetch User Profile by User ID
-    public UserProfile getUserProfileByUserId(String userId) {
-        return userProfileRepository.findByUserId(userId);
+    public UserProfile getUserProfileByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        return userProfileRepository.findByUserId(user.getId());
     }
 
     //service to create a profile
@@ -53,4 +55,5 @@ public class UserProfileService {
             throw new ResourceNotFoundException("User profile not found with ID: " + userId);
         }
     }
+
 }

@@ -8,6 +8,8 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.loanbuddy.loanbuddy.Exceptions.ResourceNotFoundException;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -37,7 +39,7 @@ public class JwtUtil {
     public String generateToken(String username) {
         return Jwts.builder()
                 .subject(username)
-                .issuedAt(new Date())
+                .issuedAt(new Date())   
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
                 .compact();
@@ -50,9 +52,21 @@ public class JwtUtil {
 
     // ✅ Validate Token (Handled by Global Exception Handler)
     public boolean validateToken(String token, String username) {
-        Claims claims = parseClaims(token);
-        return claims.getSubject().equals(username) && !isTokenExpired(claims);
+        try {
+            System.out.println("Received Token: " + token); // Debugging Line
+            
+            Claims claims = Jwts.parser()
+                .verifyWith(key) // Verify signature with secret key
+                .build()
+                .parseSignedClaims(token) // Will throw if invalid
+                .getPayload();
+    
+            return claims.getSubject().equals(username) && !isTokenExpired(claims);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("Token validation failed: " + e.getMessage());
+        }
     }
+    
 
     // ✅ Check Token Expiration
     private boolean isTokenExpired(Claims claims) {
@@ -67,4 +81,8 @@ public class JwtUtil {
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
+    
+
+    
 }
